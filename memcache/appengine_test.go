@@ -1,5 +1,3 @@
-// +build appengine
-
 package memcache
 
 import (

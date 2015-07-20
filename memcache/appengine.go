@@ -1,5 +1,3 @@
-// +build appengine
-
 // Package memcache provides an implementation of httpcache.Cache that uses App
 // Engine's memcache package to store cached responses.
 //
@@ -9,14 +7,15 @@
 package memcache
 
 import (
-	"appengine"
-	"appengine/memcache"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 )
 
 // Cache is an implementation of httpcache.Cache that caches responses in App
 // Engine's memcache.
 type Cache struct {
-	appengine.Context
+	context.Context
 }
 
 // cacheKey modifies an httpcache key for use in memcache.  Specifically, it
@@ -30,7 +29,7 @@ func (c *Cache) Get(key string) (resp []byte, ok bool) {
 	item, err := memcache.Get(c.Context, cacheKey(key))
 	if err != nil {
 		if err != memcache.ErrCacheMiss {
-			c.Context.Errorf("error getting cached response: %v", err)
+			log.Errorf(c.Context, "error getting cached response: %v", err)
 		}
 		return nil, false
 	}
@@ -44,18 +43,18 @@ func (c *Cache) Set(key string, resp []byte) {
 		Value: resp,
 	}
 	if err := memcache.Set(c.Context, item); err != nil {
-		c.Context.Errorf("error caching response: %v", err)
+		log.Errorf(c.Context, "error caching response: %v", err)
 	}
 }
 
 // Delete removes the response with key from the cache.
 func (c *Cache) Delete(key string) {
 	if err := memcache.Delete(c.Context, cacheKey(key)); err != nil {
-		c.Context.Errorf("error deleting cached response: %v", err)
+		log.Errorf(c.Context, "error deleting cached response: %v", err)
 	}
 }
 
 // New returns a new Cache for the given context.
-func New(ctx appengine.Context) *Cache {
+func New(ctx context.Context) *Cache {
 	return &Cache{ctx}
 }
